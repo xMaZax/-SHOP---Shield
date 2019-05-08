@@ -83,7 +83,8 @@ public void Shop_OnAuthorized(int iClient)
 { g_bHasShield[iClient] = false; }
 
 public ShopAction OnShieldUsed(int iClient, CategoryId category_id, const char[] category, ItemId item_id, const char[] item, bool isOn, bool elapsed)
-{
+{ 
+	if(IsPlayerAlive(iClient) && !IsFakeClient(iClient))
 	if (isOn || elapsed)
 	{
 		g_bHasShield[iClient] = false;
@@ -100,7 +101,7 @@ public ShopAction OnShieldUsed(int iClient, CategoryId category_id, const char[]
 		return Shop_UseOff;
 	}
 	
-	g_bHasShield[iClient] = true && SpawnShield(iClient);
+	g_bHasShield[iClient] = true; SpawnShield(iClient);
 	return Shop_UseOn;
 }
 
@@ -108,8 +109,7 @@ public void Event_PlayerSpawn(Handle event, const char[] name, bool dontBroadcas
 {
 	for (int iClient = 1; iClient <= MaxClients; iClient++)
 	{
-		if (g_bHasShield[iClient] == true)
-			SpawnShield(iClient);
+		if (g_bHasShield[iClient] == true) SpawnShield(iClient);
 	}
 }
 
