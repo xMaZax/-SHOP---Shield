@@ -21,12 +21,17 @@ public Plugin myinfo =
 };
 
 
+int m_hMyWeapons, 
+m_iItemDefinitionIndex, 
+mWeapon;
 bool g_bHasShield[MAXPLAYERS + 1];
 Handle g_hPrice, g_hSellPrice, g_hDuration;
 ItemId id;
 
 public void OnPluginStart()
 {
+	m_hMyWeapons = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
+	m_iItemDefinitionIndex = FindSendPropInfo("CEconEntity", "m_iItemDefinitionIndex");
 	
 	AutoExecConfig(true, "shop_shield", "shop");
 	
@@ -83,9 +88,9 @@ public void Shop_OnAuthorized(int iClient)
 { g_bHasShield[iClient] = false; }
 
 public ShopAction OnShieldUsed(int iClient, CategoryId category_id, const char[] category, ItemId item_id, const char[] item, bool isOn, bool elapsed)
-{ 
-	if(IsPlayerAlive(iClient) && !IsFakeClient(iClient))
-	if (isOn || elapsed)
+{
+	if (IsPlayerAlive(iClient) && !IsFakeClient(iClient))
+		if (isOn || elapsed)
 	{
 		g_bHasShield[iClient] = false;
 		int iWeapon = GetPlayerWeapon(iClient, "weapon_shield");
@@ -95,7 +100,6 @@ public ShopAction OnShieldUsed(int iClient, CategoryId category_id, const char[]
 			{
 				FakeClientCommand(iClient, "use weapon_knife");
 			}
-			
 			RemovePlayerItem(iClient, iWeapon) && AcceptEntityInput(iWeapon, "Kill");
 		}
 		return Shop_UseOff;
@@ -107,10 +111,8 @@ public ShopAction OnShieldUsed(int iClient, CategoryId category_id, const char[]
 
 public void Event_PlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 {
-	for (int iClient = 1; iClient <= MaxClients; iClient++)
-	{
-		if (g_bHasShield[iClient] == true) SpawnShield(iClient);
-	}
+	int iClient = GetClientOfUserId(GetEventInt(event, "userid"));
+	if (g_bHasShield[iClient] == true)SpawnShield(iClient);
 }
 
 //Thank you gubka
@@ -120,8 +122,28 @@ void SpawnShield(int iClient)
 	if (iShield != -1)
 	{
 		DispatchSpawn(iShield);
-		EquipPlayerWeapon(iClient, iShield);
+		if (cWeapon(iClient, 37))
+		{
+			EquipPlayerWeapon(iClient, iShield);
+		}
 	}
+}
+
+bool cWeapon(int iClient, int iIndex)
+{
+	for (int i; i < 64; i++)
+	{
+		mWeapon = GetEntDataEnt2(iClient, m_hMyWeapons + i * 4);
+		if (mWeapon != -1 && IsValidEntity(mWeapon))
+		{
+			if (GetEntData(mWeapon, m_iItemDefinitionIndex) == iIndex)
+			{
+				return false;
+			}
+		}
+	}
+	
+	return true;
 }
 
 //Thank you gubka
@@ -138,7 +160,7 @@ stock int GetPlayerWeapon(int clientIndex, char[] sType)
 		int weaponIndex = GetEntPropEnt(clientIndex, Prop_Send, "m_hMyWeapons", i);
 		
 		// Validate weapon
-		if (weaponIndex != -1)
+		if (weaponIndex != -1 && IsValidEntity(weaponIndex))
 		{
 			// Gets weapon classname
 			GetEdictClassname(weaponIndex, sClassname, sizeof(sClassname));
